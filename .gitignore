@@ -1,0 +1,4 @@
+.venv/
+
+data/dataset_enriquecido_10062026_lematizado.parquet
+modeling/__pycache__/hypermatch.cpython-312.pyc
