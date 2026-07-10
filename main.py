@@ -106,7 +106,7 @@ def achar_pares_parecidos_dataset(
         .reset_index(drop=True)
     )
 
-df_atual = pd.read_parquet(r"C:\Users\lfmelo\Documents\Github\TJGO_ThemeClassification-1\TJGO_Projeto-Processos-Pessoas-Vulneraveis\data\dataset_enriquecido_10062026_lematizado.parquet")
+df_atual = pd.read_parquet(r"C:\Users\lfmelo\Documents\Github\TJGO_Projeto-Processos-Pessoas-Vulneraveis\data\dataset_enriquecido_10062026_lematizado.parquet")
 df = df_atual.reset_index().rename(columns={"index": "id"})
 
 print(df.head())
