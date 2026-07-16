@@ -3,3 +3,8 @@
 data/dataset_enriquecido_10062026_lematizado.parquet
 modeling/__pycache__/hypermatch.cpython-312.pyc
 pt_core_news_lg-3.8.0-py3-none-any.whl
+/data
+/comparators/__pycache__
+/NER/__pycache__
+/extractors/__pycache__
+*.pyc
