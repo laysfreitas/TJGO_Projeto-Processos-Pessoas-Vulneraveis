@@ -158,7 +158,7 @@ def extract_name_preceding_doc(text: str, doc_raw: str) -> str:
     start_idx = match.start()
     
     # 3) Pega a substring anterior ao documento (até 180 caracteres antes)
-    sub = text[max(0, start_idx - 300):start_idx]
+    sub = text[max(0, start_idx - 180):start_idx]
     
     # 4) Encontra delimitadores comuns que separam o nome das qualificações da parte
     separators = [

@@ -52,7 +52,7 @@ if __name__ == "__main__":
             entidades.update({doc: nome_extraido})
             #print(f"Documento: {doc}, Nome Extraído: {nome_extraido}")
 
-    with open('data/entidades_cpf_nome.json', 'w', encoding='utf-8') as f:
+    with open('data/entidades_cpf_nome_300.json', 'w', encoding='utf-8') as f:
         json.dump(entidades,f, ensure_ascii=False, indent=4)
         f.close()
         
