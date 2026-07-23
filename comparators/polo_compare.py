@@ -129,6 +129,65 @@ def are_names_equivalent(name1: str, name2: str, is_cnpj: bool = False) -> bool:
         
     return False
 
+def extracao_data(peticao):
+    padrao = r"nascid\w+ em\s+(\d{1,2}[-/. ]\d{1,2}[-/. ]\d{4})"
+    padrao2 = r"nascid\w+\s+(\d{1,2}[-/. ]\d{1,2}[-/. ]\d{4})"
+    padrao3 = (
+        r"\bnascid(?:o|a|os|as)\s+em\s+"
+        r"(\d{1,2}\s+de\s+"
+        r"(?:janeiro|fevereiro|março|abril|maio|junho|julho|agosto|"
+        r"setembro|outubro|novembro|dezembro)"
+        r"\s+de\s+\d{4})"
+    )
+    padrao4 = (
+        r"nascer\s+na\s+data\s+"
+        r"(\d{1,2}\s+de\s+"
+        r"(?:janeiro|fevereiro|março|abril|maio|junho|julho|agosto|"
+        r"setembro|outubro|novembro|dezembro)"
+        r"\s+de\s+\d{4})"
+    )
+    datas = []
+    # Busca todas as ocorrências no texto
+    for match in re.finditer(padrao, peticao, re.IGNORECASE):
+        # match.group(1) captura apenas o que está dentro dos parênteses (a data)
+        data = match.group(1)
+        datas.append(data)
+        #print(f"Data 1 encontrada: {data} (na posição {match.start(1)})")
+
+    for match in re.finditer(padrao2, peticao, re.IGNORECASE):
+        data = match.group(1)
+        datas.append(data)
+        #print(f"Data 2 encontrada: {data} (na posição {match.start(1)})")
+
+    for match in re.finditer(padrao3, peticao, re.IGNORECASE):
+        data = match.group(1)
+        datas.append(data)
+        #print(f"Data 3 encontrada: {data} (na posição {match.start(1)})")
+
+    for match in re.finditer(padrao4, peticao, re.IGNORECASE):
+        data = match.group(1)
+        datas.append(data)
+        #print(f"Data 4 encontrada: {data} (na posição {match.start(1)})")
+    
+    return datas
+
+def extracao_residencia(peticao):
+    """
+    Extrai endereços de residência de um texto de petição.
+    """
+    siglas_estados = r"(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)"
+
+    # Exige Cidade/UF sem espaço entre eles (ex: São Paulo/SP, Curitiba-PR)
+    padrao = r"(?:residente|domiciliad\w+|residente e domiciliad\w+)(?:\s+em)?\s+(.+?\s+(?:CEP\s+\d{5}-\d{3}|[A-Za-zÀ-ÿ\s]+[,/]?[/|-]" + siglas_estados + r"))"    
+    enderecos = []
+    
+    for match in re.finditer(padrao, peticao, re.IGNORECASE):
+        # match.group(1) contém EXATAMENTE o endereço capturado pelo (.+?)
+        endereco = match.group(1).strip()
+        enderecos.append(endereco)
+    
+    return enderecos
+    
 
 def extract_name_preceding_doc(text: str, doc_raw: str) -> str:
     """Extrai o nome da parte que antecede seu respectivo CPF ou CNPJ na petição.
@@ -141,7 +200,7 @@ def extract_name_preceding_doc(text: str, doc_raw: str) -> str:
     # 1) Extrai os dígitos do documento
     doc_digits = re.sub(r'\D', '', str(doc_raw))
     if not doc_digits:
-        return ""
+        return "", "", ""
     
     # 2) Cria uma regex flexível para encontrar o documento no texto, aceitando espaços e pontuações
     pattern_parts = [re.escape(d) for d in doc_digits]
@@ -150,15 +209,19 @@ def extract_name_preceding_doc(text: str, doc_raw: str) -> str:
         pattern = re.compile(pattern_str)
         match = pattern.search(text)
     except Exception:
-        return ""
+        return "","", ""
         
     if not match:
-        return ""
+        return "","", ""
     
     start_idx = match.start()
+    end_idx = match.end()
     
     # 3) Pega a substring anterior ao documento (até 180 caracteres antes)
     sub = text[max(0, start_idx - 180):start_idx]
+
+    # 3.1) Pega a substring posterior ao documento (até 180 caracteres depois)
+    sub_pos = text[end_idx:min(end_idx + 450, len(text))]
     
     # 4) Encontra delimitadores comuns que separam o nome das qualificações da parte
     separators = [
@@ -247,9 +310,21 @@ def extract_name_preceding_doc(text: str, doc_raw: str) -> str:
         if len(seg_clean) >= 3:
             candidate = seg_clean
             break
-            
-    return candidate
 
+    # 6) Tenta extrair a data de nascimento associada ao documento
+    data_nascimento = extracao_data(sub)
+    if data_nascimento:
+        data_nascimento = data_nascimento[-1]  # Pega a última data encontrada, que é a mais próxima do documento
+    else:
+        data_nascimento = ""
+    
+    residente = extracao_residencia(sub_pos)
+    if residente:
+        residente = residente[0]  # Pega o primeiro endereço encontrado, que é o mais próximo do documento
+    else:
+        residente = ""
+
+    return candidate, data_nascimento, residente
 
 def polo_reverse_search(texto_doc: str, alvo_meta: str, documentos_meta: str = None) -> tuple[bool, list[dict]]:
     """Verifica se TODOS os polos cadastrados aparecem no texto da petição.
